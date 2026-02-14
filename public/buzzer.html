@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Quiz Game - Bấm Chuông</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/buzzer.css">
+</head>
+
+<body>
+    <!-- PIN Entry Screen -->
+    <div class="screen" id="pinScreen">
+        <div class="pin-icon">🔒</div>
+        <div class="select-title">Nhập mã phòng</div>
+        <input type="text" id="pinInput" class="pin-input" maxlength="4" placeholder="----" inputmode="numeric"
+            autocomplete="off">
+        <div class="pin-error hidden" id="pinError"></div>
+        <div class="select-buttons">
+            <button class="select-btn select-a" onclick="joinAsPlayer(0)">
+                <span class="select-label">Tham gia làm</span>
+                <span class="select-name" id="selectNameA">Player 1</span>
+            </button>
+            <button class="select-btn select-b" onclick="joinAsPlayer(1)">
+                <span class="select-label">Tham gia làm</span>
+                <span class="select-name" id="selectNameB">Player 2</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Buzzer Screen -->
+    <div class="screen hidden" id="buzzerScreen">
+        <div class="buzzer-status" id="buzzerStatus">Đang chờ câu hỏi...</div>
+        <div class="buzzer-player-name" id="buzzerPlayerName">-</div>
+        <button class="buzzer-btn disabled" id="buzzerBtn" onclick="pressBuzzer()" disabled>
+            <span class="buzzer-icon">🔔</span>
+            <span class="buzzer-text">BẤM CHUÔNG</span>
+        </button>
+        <div class="buzzer-result hidden" id="buzzerResult">
+            <span id="resultText"></span>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/buzzer.js"></script>
+</body>
+
+</html>

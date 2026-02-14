@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Game - Màn hình chiếu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/display.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Player A -->
+        <div class="player-card player-a">
+            <div class="player-name" id="playerAName">A</div>
+            <div class="player-score" id="playerAScore">0</div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="question-area">
+            <div class="question-header">
+                <span class="question-badge" id="questionBadge">Chưa có câu hỏi</span>
+            </div>
+            <div class="question-text" id="questionText">
+                Hãy nhập câu hỏi từ Controller
+            </div>
+            <div class="answer-area hidden" id="answerArea">
+                <div class="answer-label">ĐÁP ÁN</div>
+                <div class="answer-text" id="answerText"></div>
+            </div>
+        </div>
+
+        <!-- Player B -->
+        <div class="player-card player-b">
+            <div class="player-name" id="playerBName">B</div>
+            <div class="player-score" id="playerBScore">0</div>
+        </div>
+    </div>
+
+    <!-- Score animation overlay -->
+    <div class="score-popup" id="scorePopupA"></div>
+    <div class="score-popup" id="scorePopupB"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/display.js"></script>
+</body>
+
+</html>

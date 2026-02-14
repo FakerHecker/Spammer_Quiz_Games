@@ -1,0 +1,455 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface-2: #222240;
+    --accent-blue: #4f8cff;
+    --accent-orange: #ff8c4f;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --text: #f0f0ff;
+    --text-dim: #8888aa;
+    --border: rgba(255, 255, 255, 0.08);
+    --radius: 14px;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Status Bar */
+.status-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    transition: background 0.3s;
+}
+
+.status-bar.connected .status-dot {
+    background: var(--accent-green);
+}
+
+/* Container */
+.container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* Section */
+.section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Room PIN */
+.room-pin-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.pin-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 0.8rem;
+    background: var(--surface-2);
+    border-radius: 12px;
+}
+
+.pin-display.hidden {
+    display: none;
+}
+
+.pin-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+.pin-code {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-green);
+    letter-spacing: 0.3em;
+}
+
+.room-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.slot {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding: 0.4rem 0;
+}
+
+.slot.slot-filled {
+    color: var(--accent-green);
+}
+
+/* Player Inputs */
+.player-inputs {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.input-group {
+    flex: 1;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.player-a-input input:focus {
+    border-color: var(--accent-blue);
+}
+
+.player-b-input input:focus {
+    border-color: var(--accent-orange);
+}
+
+/* Import Tabs */
+.import-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+}
+
+.tab {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab.active {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+.tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+.full-input {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.full-input:focus {
+    border-color: var(--accent-blue);
+}
+
+.file-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.file-upload:hover {
+    border-color: var(--accent-blue);
+}
+
+.file-upload input {
+    display: none;
+}
+
+.file-upload.has-file {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.import-status {
+    font-size: 0.8rem;
+    margin-top: 0.4rem;
+    min-height: 1.2em;
+}
+
+.import-status.success {
+    color: var(--accent-green);
+}
+
+.import-status.error {
+    color: var(--accent-red);
+}
+
+/* Buttons */
+.btn {
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-primary {
+    background: var(--accent-blue);
+    color: white;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+}
+
+/* Question section */
+.q-counter {
+    font-size: 0.75rem;
+    background: rgba(79, 140, 255, 0.15);
+    color: var(--accent-blue);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+}
+
+.question-preview {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text);
+    padding: 0.8rem;
+    background: var(--surface-2);
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+    min-height: 2.5rem;
+}
+
+.answer-preview {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.8rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 10px;
+    color: var(--accent-green);
+    margin-bottom: 0.6rem;
+}
+
+.answer-preview.hidden {
+    display: none;
+}
+
+.nav-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-question {
+    flex: 1;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 1.1rem;
+    padding: 0.9rem;
+    border: none;
+}
+
+.btn-answer {
+    flex: 1;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.btn-answer.shown {
+    background: rgba(34, 197, 94, 0.25);
+}
+
+/* Score Controls */
+.score-controls {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.score-panel {
+    flex: 1;
+    text-align: center;
+    padding: 0.8rem;
+    border-radius: 12px;
+}
+
+.panel-a {
+    background: rgba(79, 140, 255, 0.08);
+    border: 1px solid rgba(79, 140, 255, 0.15);
+}
+
+.panel-b {
+    background: rgba(255, 140, 79, 0.08);
+    border: 1px solid rgba(255, 140, 79, 0.15);
+}
+
+.score-player-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.panel-a .score-player-name {
+    color: var(--accent-blue);
+}
+
+.panel-b .score-player-name {
+    color: var(--accent-orange);
+}
+
+.score-display {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.panel-a .score-display {
+    color: var(--accent-blue);
+}
+
+.panel-b .score-display {
+    color: var(--accent-orange);
+}
+
+.score-buttons {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.btn-correct {
+    flex: 1;
+    background: var(--accent-green);
+    color: white;
+    padding: 0.8rem 0.5rem;
+    font-size: 1rem;
+    border-radius: 12px;
+}
+
+.btn-correct small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.btn-wrong {
+    flex: 1;
+    background: var(--accent-red);
+    color: white;
+    padding: 0.8rem 0.5rem;
+    font-size: 1rem;
+    border-radius: 12px;
+}
+
+.btn-wrong small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* Reset */
+.full-btn {
+    width: 100%;
+}
+
+.btn-reset {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+}
+
+/* Touch optimization */
+@media (hover: none) {
+
+    .btn-correct,
+    .btn-wrong {
+        min-height: 60px;
+    }
+}

@@ -1,0 +1,289 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0a0a1a;
+    --accent-blue: #4f8cff;
+    --accent-orange: #ff8c4f;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --text: #f0f0ff;
+    --text-dim: #8888aa;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+/* Select Screen */
+.select-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.pin-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.pin-input {
+    width: 180px;
+    padding: 1rem;
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.5em;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+}
+
+.pin-input:focus {
+    border-color: var(--accent-blue);
+}
+
+.pin-error {
+    color: var(--accent-red);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.pin-error.hidden {
+    display: none;
+}
+
+.select-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+.select-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    border-radius: 20px;
+    border: 2px solid;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.select-btn:active {
+    transform: scale(0.96);
+}
+
+.select-a {
+    border-color: rgba(79, 140, 255, 0.3);
+    background: rgba(79, 140, 255, 0.08);
+}
+
+.select-a:hover {
+    background: rgba(79, 140, 255, 0.15);
+}
+
+.select-b {
+    border-color: rgba(255, 140, 79, 0.3);
+    background: rgba(255, 140, 79, 0.08);
+}
+
+.select-b:hover {
+    background: rgba(255, 140, 79, 0.15);
+}
+
+.select-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.select-name {
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.select-a .select-name {
+    color: var(--accent-blue);
+}
+
+.select-b .select-name {
+    color: var(--accent-orange);
+}
+
+/* Buzzer Screen */
+.buzzer-status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.buzzer-player-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+}
+
+.buzzer-btn {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: inherit;
+    transition: all 0.15s;
+    position: relative;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+}
+
+.buzzer-btn:not(.disabled):active {
+    transform: scale(0.92);
+}
+
+/* Active buzzer - glowing and pulsing */
+.buzzer-btn.active-a {
+    background: linear-gradient(145deg, #4f8cff, #2563eb);
+    box-shadow: 0 0 60px rgba(79, 140, 255, 0.4), 0 0 120px rgba(79, 140, 255, 0.2);
+    animation: pulse-a 1.5s ease-in-out infinite;
+}
+
+.buzzer-btn.active-b {
+    background: linear-gradient(145deg, #ff8c4f, #ea580c);
+    box-shadow: 0 0 60px rgba(255, 140, 79, 0.4), 0 0 120px rgba(255, 140, 79, 0.2);
+    animation: pulse-b 1.5s ease-in-out infinite;
+}
+
+/* Disabled buzzer */
+.buzzer-btn.disabled {
+    background: #1a1a2e;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.buzzer-icon {
+    font-size: 3.5rem;
+    line-height: 1;
+}
+
+.buzzer-text {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.1em;
+}
+
+.buzzer-btn.disabled .buzzer-text {
+    color: var(--text-dim);
+}
+
+/* Result */
+.buzzer-result {
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    border-radius: 16px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.buzzer-result.hidden {
+    display: none;
+}
+
+.buzzer-result.win {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: var(--accent-green);
+}
+
+.buzzer-result.lose {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--accent-red);
+}
+
+/* Animations */
+@keyframes pulse-a {
+
+    0%,
+    100% {
+        box-shadow: 0 0 40px rgba(79, 140, 255, 0.3), 0 0 80px rgba(79, 140, 255, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 80px rgba(79, 140, 255, 0.5), 0 0 160px rgba(79, 140, 255, 0.2);
+    }
+}
+
+@keyframes pulse-b {
+
+    0%,
+    100% {
+        box-shadow: 0 0 40px rgba(255, 140, 79, 0.3), 0 0 80px rgba(255, 140, 79, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 80px rgba(255, 140, 79, 0.5), 0 0 160px rgba(255, 140, 79, 0.2);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Quiz Game - Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/controller.css">
+</head>
+
+<body>
+    <!-- Connection Status -->
+    <div class="status-bar" id="statusBar">
+        <span class="status-dot"></span>
+        <span id="statusText">Đang kết nối...</span>
+    </div>
+
+    <div class="container">
+        <!-- Player Names Section -->
+        <section class="section">
+            <div class="section-title">👥 Người chơi</div>
+            <div class="player-inputs">
+                <div class="input-group player-a-input">
+                    <label>Player 1</label>
+                    <input type="text" id="playerAInput" value="A" placeholder="Tên người chơi 1">
+                </div>
+                <div class="input-group player-b-input">
+                    <label>Player 2</label>
+                    <input type="text" id="playerBInput" value="B" placeholder="Tên người chơi 2">
+                </div>
+            </div>
+        </section>
+
+        <!-- Room PIN Section -->
+        <section class="section">
+            <div class="section-title">🔒 Phòng thi đấu</div>
+            <div class="room-pin-area">
+                <button class="btn btn-primary" onclick="generatePin()">🎲 Tạo mã phòng</button>
+                <div class="pin-display hidden" id="pinDisplay">
+                    <span class="pin-label">Mã PIN:</span>
+                    <span class="pin-code" id="pinCode">----</span>
+                </div>
+                <div class="room-slots" id="roomSlots">
+                    <div class="slot" id="slot0">⬜ Player 1: chưa vào</div>
+                    <div class="slot" id="slot1">⬜ Player 2: chưa vào</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Import Questions Section -->
+        <section class="section">
+            <div class="section-title">📋 Nhập kho đề</div>
+            <div class="import-tabs">
+                <button class="tab active" id="tabSheet" onclick="switchTab('sheet')">Google Sheets</button>
+                <button class="tab" id="tabExcel" onclick="switchTab('excel')">File Excel</button>
+            </div>
+
+            <div class="tab-content" id="sheetContent">
+                <input type="text" id="sheetUrl" class="full-input" placeholder="Dán link Google Sheets (public)...">
+                <button class="btn btn-primary" onclick="importSheet()">
+                    <span>📥</span> Import từ Sheets
+                </button>
+            </div>
+
+            <div class="tab-content hidden" id="excelContent">
+                <label class="file-upload" id="fileLabel">
+                    <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+                    <span>📁 Chọn file Excel / CSV</span>
+                </label>
+                <button class="btn btn-primary" onclick="uploadExcel()">
+                    <span>📤</span> Upload
+                </button>
+            </div>
+
+            <div class="import-status" id="importStatus"></div>
+        </section>
+
+        <!-- Question Control -->
+        <section class="section" id="questionSection" style="display:none;">
+            <div class="section-title">❓ Điều khiển câu hỏi</div>
+            <div class="question-preview" id="questionPreview">-</div>
+            <div class="answer-preview hidden" id="answerPreview">-</div>
+            <div class="nav-row">
+                <button class="btn btn-question" onclick="randomQuestion()">❓ Câu hỏi</button>
+                <button class="btn btn-answer" id="btnAnswer" onclick="toggleAnswer()">👁 Hiện đáp án</button>
+            </div>
+        </section>
+
+        <!-- Score Control -->
+        <section class="section">
+            <div class="section-title">🏆 Điểm số</div>
+            <div class="score-controls">
+                <!-- Player A -->
+                <div class="score-panel panel-a">
+                    <div class="score-player-name" id="scorePlayerA">A</div>
+                    <div class="score-display" id="scoreA">0</div>
+                    <div class="score-buttons">
+                        <button class="btn btn-correct" onclick="addScore(0, 1)">
+                            Đúng<br><small>+1</small>
+                        </button>
+                        <button class="btn btn-wrong" onclick="addScore(0, -1)">
+                            Sai<br><small>-1</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Player B -->
+                <div class="score-panel panel-b">
+                    <div class="score-player-name" id="scorePlayerB">B</div>
+                    <div class="score-display" id="scoreB">0</div>
+                    <div class="score-buttons">
+                        <button class="btn btn-correct" onclick="addScore(1, 1)">
+                            Đúng<br><small>+1</small>
+                        </button>
+                        <button class="btn btn-wrong" onclick="addScore(1, -1)">
+                            Sai<br><small>-1</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reset -->
+        <section class="section">
+            <button class="btn btn-reset full-btn" onclick="resetGame()">🔄 Reset</button>
+        </section>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/controller.js"></script>
+</body>
+
+</html>
