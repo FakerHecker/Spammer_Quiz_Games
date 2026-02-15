@@ -350,6 +350,17 @@ body {
     background: rgba(34, 197, 94, 0.25);
 }
 
+.btn-timer {
+    flex: 1;
+    background: rgba(255, 140, 79, 0.15);
+    color: var(--accent-orange);
+    border: 1px solid rgba(255, 140, 79, 0.2);
+}
+
+.btn-timer:hover {
+    background: rgba(255, 140, 79, 0.25);
+}
+
 /* Score Controls */
 .score-controls {
     display: flex;

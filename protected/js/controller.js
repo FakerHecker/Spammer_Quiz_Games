@@ -119,6 +119,12 @@ function toggleAnswer() {
     socket.emit('toggle-answer');
 }
 
+function startCountdown(seconds) {
+    if (confirm(`Bắt đầu đếm ngược ${seconds}s?`)) {
+        socket.emit('start-countdown', { seconds });
+    }
+}
+
 // ===== Import: Tab Switch =====
 function switchTab(tab) {
     document.getElementById('tabSheet').classList.toggle('active', tab === 'sheet');

@@ -45,14 +45,21 @@
             <div class="player-name" id="playerBName">B</div>
             <div class="player-score" id="playerBScore">0</div>
         </div>
-    </div>
+        <!-- Buzzer Overlay -->
+        <div class="buzzer-overlay hidden" id="buzzerOverlay">
+            <div class="buzzer-content">
+                <div class="buzzer-title" id="buzzerTitle">NGƯỜI CHƠI TRẢ LỜI</div>
+                <div class="buzzer-name" id="buzzerName">Player A</div>
+                <div class="buzzer-timer" id="buzzerTimer">10</div>
+            </div>
+        </div>
 
-    <!-- Score animation overlay -->
-    <div class="score-popup" id="scorePopupA"></div>
-    <div class="score-popup" id="scorePopupB"></div>
+        <!-- Score animation overlay -->
+        <div class="score-popup" id="scorePopupA"></div>
+        <div class="score-popup" id="scorePopupB"></div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/display.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="/js/display.js"></script>
 </body>
 
 </html>

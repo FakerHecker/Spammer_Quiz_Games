@@ -107,3 +107,64 @@ socket.on('connect', () => {
 socket.on('disconnect', () => {
     console.log('Disconnected from server');
 });
+
+// ===== OVERLAY LOGIC =====
+const buzzerOverlay = document.getElementById('buzzerOverlay');
+const buzzerTitle = document.getElementById('buzzerTitle');
+const buzzerName = document.getElementById('buzzerName');
+const buzzerTimer = document.getElementById('buzzerTimer');
+let countdownInterval;
+
+function startCountdownTimer(initialSeconds, onComplete) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    let seconds = initialSeconds;
+    buzzerTimer.textContent = seconds;
+    buzzerOverlay.classList.remove('hidden');
+
+    countdownInterval = setInterval(() => {
+        seconds--;
+        buzzerTimer.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(countdownInterval);
+            setTimeout(() => {
+                // Small delay to show 0
+                if (onComplete) onComplete();
+            }, 500);
+        }
+    }, 1000);
+}
+
+function hideOverlay() {
+    buzzerOverlay.classList.add('hidden');
+    if (countdownInterval) clearInterval(countdownInterval);
+}
+
+// 1. Buzzer Winner
+socket.on('buzzer-winner', ({ playerIndex, playerName }) => {
+    buzzerTitle.textContent = 'NGƯỜI CHƠI TRẢ LỜI';
+    buzzerName.textContent = playerName;
+
+    buzzerOverlay.classList.remove('type-b', 'type-timer');
+    if (playerIndex === 1) buzzerOverlay.classList.add('type-b');
+
+    startCountdownTimer(10, hideOverlay);
+});
+
+// 2. 5s Countdown
+socket.on('display-countdown', ({ seconds }) => {
+    buzzerTitle.textContent = 'CHUẨN BỊ...';
+    buzzerName.textContent = '';
+
+    buzzerOverlay.classList.remove('type-b');
+    buzzerOverlay.classList.add('type-timer');
+
+    startCountdownTimer(seconds, hideOverlay);
+});
+
+// 3. Auto-hide on state reset
+socket.on('state-update', (state) => {
+    // If buzzer active (new question) or reset
+    if (state.buzzer.active || (state.currentQuestionIndex === -1 && state.questionCount === 0)) {
+        hideOverlay();
+    }
+});

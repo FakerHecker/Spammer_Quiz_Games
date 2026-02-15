@@ -690,6 +690,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Start countdown
+    socket.on('start-countdown', ({ seconds }) => {
+        io.emit('display-countdown', { seconds });
+    });
+
     // Reset (scores + counter only, keep used questions)
     socket.on('reset', () => {
         gameState.players.forEach(p => p.score = 0);
