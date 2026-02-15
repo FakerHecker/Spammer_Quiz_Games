@@ -350,6 +350,18 @@ socket.on('room-status', ({ slots }) => {
     slot1.className = 'slot' + (slots[1] ? ' slot-filled' : '');
 });
 
+// ===== Logout =====
+async function handleLogout() {
+    if (!confirm('Bạn muốn đăng xuất khỏi Controller?')) return;
+
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        // ignore
+    }
+    window.location.href = '/login';
+}
+
 // ===== Helpers =====
 function showImportStatus(text, type) {
     importStatus.textContent = text;

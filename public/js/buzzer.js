@@ -37,6 +37,15 @@ function joinRoom() {
     socket.emit('register-buzzer', { pin, name });
 }
 
+// Auto-join if PIN/Name in URL params
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('pin')) {
+    pinInput.value = urlParams.get('pin');
+}
+if (urlParams.has('name')) {
+    nameInput.value = urlParams.get('name');
+}
+
 // Registered confirmation
 socket.on('buzzer-registered', ({ playerIndex, playerName }) => {
     pinScreen.classList.add('hidden');

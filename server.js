@@ -4,6 +4,9 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const path = require('path');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,9 +14,365 @@ const io = new Server(server, {
     cors: { origin: '*' }
 });
 
-// Middleware
-app.use(express.static(path.join(__dirname, 'public')));
+// ===== SECURITY CONFIG =====
+const SESSION_SECRET = crypto.randomBytes(32).toString('hex'); // Random per server start
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+const DATA_FILE = path.join(__dirname, 'data', 'users.json');
+
+// Active sessions: token -> { createdAt, ip, username }
+const activeSessions = new Map();
+
+// Rate limiting: ip -> { attempts, lastAttempt, lockedUntil }
+const loginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
+const ATTEMPT_WINDOW = 15 * 60 * 1000; // 15 minutes
+
+// ===== MIDDLEWARE =====
+app.use(cookieParser(SESSION_SECRET));
 app.use(express.json());
+
+// Block access to display if roomPin is not created
+app.get(['/display', '/display.html'], (req, res, next) => {
+    if (!roomPin) {
+        return res.send(`
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+                <meta charset="UTF-8">
+                <title>Chưa có phòng</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #0f0f1a; color: #fff; text-align: center; }
+                    h1 { color: #ef4444; }
+                </style>
+            </head>
+            <body>
+                <div>
+                    <h1>⛔ Chưa có phòng chơi</h1>
+                    <p>Vui lòng truy cập <b>Controller</b> và tạo mã PIN trước.</p>
+                    <p>Tự động tải lại sau 5 giây...</p>
+                    <script>setTimeout(() => location.reload(), 5000);</script>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+    if (req.path === '/display') {
+        return res.sendFile(path.join(__dirname, 'public', 'display.html'));
+    }
+    next();
+});
+
+app.get('/buzzer', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'buzzer.html'));
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ===== DATA HELPERS =====
+function loadUsers() {
+    try {
+        if (!fs.existsSync(DATA_FILE)) {
+            fs.writeFileSync(DATA_FILE, '{}');
+            return {};
+        }
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error('Error loading users:', err);
+        return {};
+    }
+}
+
+function saveUsers(users) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
+    } catch (err) {
+        console.error('Error saving users:', err);
+    }
+}
+
+// function getUserKey(username) { return crypto.createHash('sha256').update(username).digest('hex'); }
+// But I need to add it to the file.
+
+function getUserKey(username) {
+    return crypto.createHash('sha256').update(username).digest('hex');
+}
+
+function generateSessionToken() {
+    return crypto.randomBytes(48).toString('hex');
+}
+
+function createSession(ip, username) {
+    const token = generateSessionToken();
+    activeSessions.set(token, {
+        createdAt: Date.now(),
+        ip,
+        username
+    });
+    return token;
+}
+
+function isValidSession(token) {
+    if (!token) return false;
+    const session = activeSessions.get(token);
+    if (!session) return false;
+    // Check expiration
+    if (Date.now() - session.createdAt > SESSION_MAX_AGE) {
+        activeSessions.delete(token);
+        return false;
+    }
+    return true;
+}
+
+function cleanExpiredSessions() {
+    const now = Date.now();
+    for (const [token, session] of activeSessions) {
+        if (now - session.createdAt > SESSION_MAX_AGE) {
+            activeSessions.delete(token);
+        }
+    }
+}
+
+// Clean expired sessions every hour
+setInterval(cleanExpiredSessions, 60 * 60 * 1000);
+
+function getClientIp(req) {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.connection.remoteAddress;
+}
+
+function checkRateLimit(ip) {
+    const record = loginAttempts.get(ip);
+    if (!record) return { allowed: true };
+
+    const now = Date.now();
+
+    // If locked out, check if lockout has expired
+    if (record.lockedUntil && now < record.lockedUntil) {
+        const remainingSec = Math.ceil((record.lockedUntil - now) / 1000);
+        return {
+            allowed: false,
+            message: `Quá nhiều lần thử. Vui lòng đợi ${remainingSec} giây.`,
+            retryAfter: remainingSec
+        };
+    }
+
+    // Reset if window has passed
+    if (now - record.lastAttempt > ATTEMPT_WINDOW) {
+        loginAttempts.delete(ip);
+        return { allowed: true };
+    }
+
+    return { allowed: true };
+}
+
+function recordFailedAttempt(ip) {
+    const now = Date.now();
+    const record = loginAttempts.get(ip) || { attempts: 0, lastAttempt: now };
+
+    // Reset count if window expired
+    if (now - record.lastAttempt > ATTEMPT_WINDOW) {
+        record.attempts = 0;
+    }
+
+    record.attempts += 1;
+    record.lastAttempt = now;
+
+    if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
+        record.lockedUntil = now + LOCKOUT_DURATION;
+        console.log(`[SECURITY] IP ${ip} locked out for ${LOCKOUT_DURATION / 1000}s after ${record.attempts} failed attempts`);
+    }
+
+    loginAttempts.set(ip, record);
+}
+
+function clearAttempts(ip) {
+    loginAttempts.delete(ip);
+}
+
+// ===== AUTH MIDDLEWARE =====
+function requireAuth(req, res, next) {
+    const token = req.signedCookies?.controller_session;
+    if (isValidSession(token)) {
+        return next();
+    }
+    // Redirect to login page
+    return res.redirect('/login');
+}
+
+// ===== AUTH ROUTES =====
+
+// Login page (public)
+app.get('/login', (req, res) => {
+    // If already authenticated, redirect to controller
+    const token = req.signedCookies?.controller_session;
+    if (isValidSession(token)) {
+        return res.redirect('/controller');
+    }
+    res.sendFile(path.join(__dirname, 'protected', 'login.html'));
+});
+
+// Register API
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Vui lòng nhập tên đăng nhập và mật khẩu' });
+    }
+
+    const users = loadUsers();
+    if (users[getUserKey(username)]) {
+        return res.status(400).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
+    }
+
+    // Hash password (simple sha256 for demo, use bcrypt in production)
+    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+    users[getUserKey(username)] = {
+        password: hashedPassword,
+        questionSets: []
+    };
+    saveUsers(users);
+
+    return res.json({ success: true, message: 'Đăng ký thành công' });
+});
+
+// Forgot Password API
+app.post('/api/forgot-password', (req, res) => {
+    const { username, newPassword } = req.body;
+    if (!username || !newPassword) {
+        return res.status(400).json({ success: false, error: 'Vui lòng nhập tên đăng nhập và mật khẩu mới' });
+    }
+
+    const users = loadUsers();
+    if (!users[getUserKey(username)]) {
+        return res.status(400).json({ success: false, error: 'Tên đăng nhập không tồn tại' });
+    }
+
+    // Update password
+    const hashedPassword = crypto.createHash('sha256').update(newPassword).digest('hex');
+    users[getUserKey(username)].password = hashedPassword;
+    saveUsers(users);
+
+    return res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+});
+
+// Login API
+app.post('/api/login', (req, res) => {
+    const ip = getClientIp(req);
+
+    // Check rate limit
+    const rateCheck = checkRateLimit(ip);
+    if (!rateCheck.allowed) {
+        return res.status(429).json({
+            success: false,
+            error: rateCheck.message,
+            retryAfter: rateCheck.retryAfter
+        });
+    }
+
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Vui lòng nhập tên đăng nhập và mật khẩu' });
+    }
+
+    const users = loadUsers();
+    const user = users[getUserKey(username)];
+
+    if (!user) {
+        recordFailedAttempt(ip);
+        return res.status(401).json({ success: false, error: 'Tên đăng nhập hoặc mật khẩu không đúng' });
+    }
+
+    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+    // Constant-time comparison
+    const passwordBuffer = Buffer.from(hashedPassword);
+    const correctBuffer = Buffer.from(user.password);
+
+    let isCorrect = false;
+    if (passwordBuffer.length === correctBuffer.length) {
+        isCorrect = crypto.timingSafeEqual(passwordBuffer, correctBuffer);
+    }
+
+    if (isCorrect) {
+        clearAttempts(ip);
+        const token = createSession(ip, username);
+
+        // Load user's question sets into game state
+        // Note: In a real app with multiple concurrent games, we'd need separate game states per room/user.
+        // For this single-instance demo, we'll overwrite the global game state with the user's data.
+        gameState.hostName = username;
+        gameState.questionSets = user.questionSets || [];
+        rebuildQuestions();
+        io.emit('state-update', gameState);
+
+        // Set secure HTTP-only signed cookie
+        res.cookie('controller_session', token, {
+            signed: true,
+            httpOnly: true,
+            maxAge: SESSION_MAX_AGE,
+            sameSite: 'strict',
+            // secure: true // Enable when using HTTPS
+        });
+
+        console.log(`[AUTH] Login successful for ${username} from IP: ${ip}`);
+        return res.json({ success: true });
+    }
+
+    // Failed login
+    recordFailedAttempt(ip);
+    const record = loginAttempts.get(ip);
+    const remaining = MAX_LOGIN_ATTEMPTS - record.attempts;
+
+    console.log(`[AUTH] Failed login from IP: ${ip} (${record.attempts}/${MAX_LOGIN_ATTEMPTS})`);
+
+    return res.status(401).json({
+        success: false,
+        error: remaining > 0
+            ? `Mật khẩu không đúng. Còn ${remaining} lần thử.`
+            : `Quá nhiều lần thử. Bị khóa ${LOCKOUT_DURATION / 1000 / 60} phút.`
+    });
+});
+
+// Logout API
+app.post('/api/logout', (req, res) => {
+    const token = req.signedCookies?.controller_session;
+    if (token) {
+        activeSessions.delete(token);
+    }
+    res.clearCookie('controller_session');
+    return res.json({ success: true });
+});
+
+// Check auth status API
+app.get('/api/auth-status', (req, res) => {
+    const token = req.signedCookies?.controller_session;
+    return res.json({ authenticated: isValidSession(token) });
+});
+
+// ===== PROTECTED CONTROLLER ROUTES =====
+app.get('/controller', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'protected', 'controller.html'));
+});
+
+// Serve protected static files with auth
+app.get('/protected/js/controller.js', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'protected', 'js', 'controller.js'));
+});
+
+app.get('/protected/css/controller.css', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'protected', 'css', 'controller.css'));
+});
+
+// ===== PROTECTED API ROUTES =====
+// Middleware to protect controller API routes
+function requireApiAuth(req, res, next) {
+    const token = req.signedCookies?.controller_session;
+    if (isValidSession(token)) {
+        return next();
+    }
+    return res.status(401).json({ error: 'Unauthorized. Please login first.' });
+}
 
 // In-memory file upload
 const storage = multer.memoryStorage();
@@ -30,6 +389,7 @@ function shuffleArray(arr) {
 
 // Game state (single source of truth)
 let gameState = {
+    hostName: '',           // Current host
     players: [
         { name: 'A', score: 0 },
         { name: 'B', score: 0 }
@@ -67,8 +427,21 @@ let roomPin = null; // null = no room created
 const buzzerPlayers = {}; // socketId -> playerIndex (0 or 1)
 const buzzerSlots = { 0: null, 1: null }; // playerIndex -> socketId
 
-// API: Upload Excel file(s) and parse questions (supports multiple files)
-app.post('/api/upload-excel', upload.array('files', 20), (req, res) => {
+// Helper to save current user's question sets
+function saveCurrentUserSets(req) {
+    const token = req.signedCookies?.controller_session;
+    const session = activeSessions.get(token);
+    if (session && session.username) {
+        const users = loadUsers();
+        if (users[getUserKey(session.username)]) {
+            users[getUserKey(session.username)].questionSets = gameState.questionSets;
+            saveUsers(users);
+        }
+    }
+}
+
+// API: Upload Excel file(s) — PROTECTED
+app.post('/api/upload-excel', requireApiAuth, upload.array('files', 20), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -103,6 +476,7 @@ app.post('/api/upload-excel', upload.array('files', 20), (req, res) => {
         }
 
         rebuildQuestions();
+        saveCurrentUserSets(req); // Save to user profile
         io.emit('state-update', gameState);
         res.json({ success: true, count: totalNewQuestions, files: fileResults });
     } catch (err) {
@@ -111,8 +485,8 @@ app.post('/api/upload-excel', upload.array('files', 20), (req, res) => {
     }
 });
 
-// API: Parse Google Sheets CSV
-app.post('/api/import-sheet', express.json(), (req, res) => {
+// API: Parse Google Sheets CSV — PROTECTED
+app.post('/api/import-sheet', requireApiAuth, express.json(), (req, res) => {
     const { questions, sourceName } = req.body;
     if (!questions || questions.length === 0) {
         return res.status(400).json({ error: 'Không có câu hỏi' });
@@ -128,6 +502,7 @@ app.post('/api/import-sheet', express.json(), (req, res) => {
     });
 
     rebuildQuestions();
+    saveCurrentUserSets(req); // Save to user profile
     io.emit('state-update', gameState);
     res.json({ success: true, count: questions.length, setId });
 });
@@ -181,6 +556,12 @@ io.on('connection', (socket) => {
 
     // Send current state to newly connected client
     socket.emit('state-update', gameState);
+
+    // Send current room PIN if exists
+    if (roomPin) {
+        socket.emit('pin-created', { pin: roomPin });
+        socket.emit('room-status', { slots: { 0: !!buzzerSlots[0], 1: !!buzzerSlots[1] } });
+    }
 
     // Update player name
     socket.on('update-player-name', ({ index, name }) => {
@@ -325,6 +706,18 @@ io.on('connection', (socket) => {
         if (idx === -1) return;
         gameState.questionSets.splice(idx, 1);
         rebuildQuestions();
+
+        // We need to save this change to the user's profile, but we don't have the request object here.
+        // In a real app, we'd map socket.id to user session.
+        // For this simple version, we'll just update the file if we know the host.
+        if (gameState.hostName) {
+            const users = loadUsers();
+            if (users[getUserKey(gameState.hostName)]) {
+                users[getUserKey(gameState.hostName)].questionSets = gameState.questionSets;
+                saveUsers(users);
+            }
+        }
+
         io.emit('state-update', gameState);
     });
 
@@ -342,6 +735,16 @@ io.on('connection', (socket) => {
         gameState.questionCount = 0;
         gameState.showAnswer = false;
         gameState.buzzer = { active: false, winner: -1 };
+        // Keep hostName
+
+        // Update user storage
+        if (gameState.hostName) {
+            const users = loadUsers();
+            if (users[getUserKey(gameState.hostName)]) {
+                users[getUserKey(gameState.hostName)].questionSets = [];
+                saveUsers(users);
+            }
+        }
 
         // Clear room
         roomPin = null;
@@ -379,12 +782,9 @@ server.listen(PORT, '0.0.0.0', () => {
 ║         🎮 Quiz Game Server Started          ║
 ╠══════════════════════════════════════════════╣
 ║                                              ║
-║  Display:    http://localhost:${PORT}/display.html    ║
-║  Controller: http://localhost:${PORT}/controller.html ║
-║  Buzzer:     http://localhost:${PORT}/buzzer.html     ║
-║                                              ║
-║  Mở controller trên điện thoại:              ║
-║  → Dùng cùng WiFi, truy cập IP máy tính     ║
+║  Display:    http://localhost:${PORT}/display         ║
+║  Controller: http://localhost:${PORT}/controller     ║
+║  Buzzer:     http://localhost:${PORT}/buzzer          ║
 ║                                              ║
 ╚══════════════════════════════════════════════╝
   `);

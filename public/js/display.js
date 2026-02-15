@@ -14,6 +14,7 @@ const answerText = document.getElementById('answerText');
 const scorePopupA = document.getElementById('scorePopupA');
 const scorePopupB = document.getElementById('scorePopupB');
 const roomPinValue = document.getElementById('roomPinValue');
+const hostNameValue = document.getElementById('hostNameValue');
 
 // Room PIN update
 socket.on('room-pin', ({ pin }) => {
@@ -22,6 +23,13 @@ socket.on('room-pin', ({ pin }) => {
 
 // State update handler
 socket.on('state-update', (state) => {
+    // Update host name
+    if (state.hostName) {
+        hostNameValue.textContent = state.hostName;
+    } else {
+        hostNameValue.textContent = '---';
+    }
+
     // Update player names
     playerAName.textContent = state.players[0].name;
     playerBName.textContent = state.players[1].name;

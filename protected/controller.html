@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/controller.css">
+    <link rel="stylesheet" href="/protected/css/controller.css">
 </head>
 
 <body>
@@ -16,6 +16,7 @@
     <div class="status-bar" id="statusBar">
         <span class="status-dot"></span>
         <span id="statusText">Đang kết nối...</span>
+        <button class="logout-btn" id="logoutBtn" onclick="handleLogout()" title="Đăng xuất">🔒 Đăng xuất</button>
     </div>
 
     <div class="container">
@@ -135,7 +136,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/controller.js"></script>
+    <script src="/protected/js/controller.js"></script>
 </body>
 
 </html>
