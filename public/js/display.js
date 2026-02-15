@@ -13,6 +13,12 @@ const answerArea = document.getElementById('answerArea');
 const answerText = document.getElementById('answerText');
 const scorePopupA = document.getElementById('scorePopupA');
 const scorePopupB = document.getElementById('scorePopupB');
+const roomPinValue = document.getElementById('roomPinValue');
+
+// Room PIN update
+socket.on('room-pin', ({ pin }) => {
+    roomPinValue.textContent = pin;
+});
 
 // State update handler
 socket.on('state-update', (state) => {

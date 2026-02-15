@@ -38,7 +38,7 @@
         <section class="section">
             <div class="section-title">🔒 Phòng thi đấu</div>
             <div class="room-pin-area">
-                <button class="btn btn-primary" onclick="generatePin()">🎲 Tạo mã phòng</button>
+                <button class="btn btn-primary" onclick="generatePin()">🎲 Tạo trận mới</button>
                 <div class="pin-display hidden" id="pinDisplay">
                     <span class="pin-label">Mã PIN:</span>
                     <span class="pin-code" id="pinCode">----</span>
@@ -67,9 +67,11 @@
 
             <div class="tab-content hidden" id="excelContent">
                 <label class="file-upload" id="fileLabel">
-                    <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
-                    <span>📁 Chọn file Excel / CSV</span>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" multiple
+                        onchange="handleFileSelect(event)">
+                    <span>📁 Chọn file Excel / CSV (nhiều file)</span>
                 </label>
+                <div class="selected-files" id="selectedFiles"></div>
                 <button class="btn btn-primary" onclick="uploadExcel()">
                     <span>📤</span> Upload
                 </button>
@@ -77,6 +79,9 @@
 
             <div class="import-status" id="importStatus"></div>
         </section>
+
+        <!-- Active Question Sets -->
+        <div id="questionSetsContainer"></div>
 
         <!-- Question Control -->
         <section class="section" id="questionSection" style="display:none;">
@@ -123,9 +128,9 @@
             </div>
         </section>
 
-        <!-- Reset -->
+        <!-- Reset toàn bộ -->
         <section class="section">
-            <button class="btn btn-reset full-btn" onclick="resetGame()">🔄 Reset</button>
+            <button class="btn btn-full-reset full-btn" onclick="fullResetGame()">💣 Reset toàn bộ</button>
         </section>
     </div>
 

@@ -34,7 +34,8 @@ let gameState = {
         { name: 'A', score: 0 },
         { name: 'B', score: 0 }
     ],
-    questions: [],
+    questionSets: [],       // Array of { id, source, type, questions[], count }
+    questions: [],           // Flattened + shuffled from all sets
     usedQuestions: [],
     currentQuestionIndex: -1,
     questionCount: 0,
@@ -45,35 +46,65 @@ let gameState = {
     }
 };
 
+let nextSetId = 1;
+
+// Rebuild flat questions array from all question sets
+function rebuildQuestions() {
+    const all = [];
+    for (const set of gameState.questionSets) {
+        all.push(...set.questions);
+    }
+    gameState.questions = shuffleArray(all);
+    gameState.usedQuestions = [];
+    gameState.currentQuestionIndex = -1;
+    gameState.questionCount = 0;
+    gameState.showAnswer = false;
+    gameState.buzzer = { active: false, winner: -1 };
+}
+
 // Room PIN & buzzer player tracking
 let roomPin = null; // null = no room created
 const buzzerPlayers = {}; // socketId -> playerIndex (0 or 1)
 const buzzerSlots = { 0: null, 1: null }; // playerIndex -> socketId
 
-// API: Upload Excel file and parse questions
-app.post('/api/upload-excel', upload.single('file'), (req, res) => {
+// API: Upload Excel file(s) and parse questions (supports multiple files)
+app.post('/api/upload-excel', upload.array('files', 20), (req, res) => {
     try {
-        if (!req.file) {
+        if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        let totalNewQuestions = 0;
+        const fileResults = [];
 
-        const questions = parseQuestions(data);
-        if (questions.length === 0) {
-            return res.status(400).json({ error: 'Không tìm thấy câu hỏi trong file' });
+        for (const file of req.files) {
+            const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            const questions = parseQuestions(data);
+
+            if (questions.length > 0) {
+                const setId = nextSetId++;
+                gameState.questionSets.push({
+                    id: setId,
+                    source: file.originalname,
+                    type: 'excel',
+                    questions,
+                    count: questions.length
+                });
+                totalNewQuestions += questions.length;
+                fileResults.push({ id: setId, name: file.originalname, count: questions.length });
+            }
         }
 
-        gameState.questions = shuffleArray(questions);
-        gameState.currentQuestionIndex = -1;
-        gameState.questionCount = 0;
-        gameState.showAnswer = false;
+        if (totalNewQuestions === 0) {
+            return res.status(400).json({ error: 'Không tìm thấy câu hỏi trong các file' });
+        }
 
+        rebuildQuestions();
         io.emit('state-update', gameState);
-        res.json({ success: true, count: questions.length });
+        res.json({ success: true, count: totalNewQuestions, files: fileResults });
     } catch (err) {
         console.error('Excel parse error:', err);
         res.status(500).json({ error: 'Lỗi đọc file Excel' });
@@ -82,20 +113,23 @@ app.post('/api/upload-excel', upload.single('file'), (req, res) => {
 
 // API: Parse Google Sheets CSV
 app.post('/api/import-sheet', express.json(), (req, res) => {
-    // Questions will be parsed on the client side from CSV
-    // Client sends parsed questions array
-    const { questions } = req.body;
+    const { questions, sourceName } = req.body;
     if (!questions || questions.length === 0) {
         return res.status(400).json({ error: 'Không có câu hỏi' });
     }
 
-    gameState.questions = shuffleArray(questions);
-    gameState.currentQuestionIndex = -1;
-    gameState.questionCount = 0;
-    gameState.showAnswer = false;
+    const setId = nextSetId++;
+    gameState.questionSets.push({
+        id: setId,
+        source: sourceName || 'Google Sheets',
+        type: 'sheet',
+        questions,
+        count: questions.length
+    });
 
+    rebuildQuestions();
     io.emit('state-update', gameState);
-    res.json({ success: true, count: questions.length });
+    res.json({ success: true, count: questions.length, setId });
 });
 
 // Parse questions from 2D array data
@@ -198,7 +232,7 @@ io.on('connection', (socket) => {
         io.emit('buzzer-winner', { playerIndex, playerName: gameState.players[playerIndex].name });
     });
 
-    // Generate room PIN (from controller)
+    // Generate room PIN (from controller) — also resets scores/counter
     socket.on('generate-pin', () => {
         roomPin = String(Math.floor(1000 + Math.random() * 9000)); // 4-digit
         // Kick existing buzzer players
@@ -210,30 +244,62 @@ io.on('connection', (socket) => {
         Object.keys(buzzerPlayers).forEach(k => delete buzzerPlayers[k]);
         buzzerSlots[0] = null;
         buzzerSlots[1] = null;
+
+        // Reset scores and counter
+        gameState.players.forEach(p => p.score = 0);
+        gameState.questionCount = 0;
+        gameState.currentQuestionIndex = -1;
+        gameState.showAnswer = false;
+        gameState.buzzer = { active: false, winner: -1 };
+
         socket.emit('pin-created', { pin: roomPin });
+        io.emit('room-pin', { pin: roomPin });
         io.emit('room-status', { slots: { 0: !!buzzerSlots[0], 1: !!buzzerSlots[1] } });
+        io.emit('state-update', gameState);
     });
 
-    // Register buzzer player (with PIN validation)
-    socket.on('register-buzzer', ({ playerIndex, pin }) => {
+    // Register buzzer player (with PIN + name, auto-assign slot)
+    socket.on('register-buzzer', ({ pin, name }) => {
         // Validate PIN
         if (!roomPin || pin !== roomPin) {
             socket.emit('buzzer-error', { message: 'Mã PIN không đúng' });
             return;
         }
-        if (playerIndex !== 0 && playerIndex !== 1) {
-            socket.emit('buzzer-error', { message: 'Vị trí không hợp lệ' });
+        if (!name || !name.trim()) {
+            socket.emit('buzzer-error', { message: 'Vui lòng nhập tên' });
             return;
         }
-        // Check if slot is already taken by someone else
-        if (buzzerSlots[playerIndex] && buzzerSlots[playerIndex] !== socket.id) {
-            socket.emit('buzzer-error', { message: `Vị trí ${gameState.players[playerIndex].name} đã có người` });
+
+        // Check if this socket is already registered
+        if (buzzerPlayers[socket.id] !== undefined) {
+            const existingIndex = buzzerPlayers[socket.id];
+            // Update name
+            gameState.players[existingIndex].name = name.trim();
+            io.emit('state-update', gameState);
+            socket.emit('buzzer-registered', { playerIndex: existingIndex, playerName: name.trim() });
             return;
         }
+
+        // Auto-assign to next available slot
+        let assignedIndex = -1;
+        if (buzzerSlots[0] === null) {
+            assignedIndex = 0;
+        } else if (buzzerSlots[1] === null) {
+            assignedIndex = 1;
+        } else {
+            socket.emit('buzzer-error', { message: 'Phòng đã đầy (2/2 người chơi)' });
+            return;
+        }
+
         // Register
-        buzzerPlayers[socket.id] = playerIndex;
-        buzzerSlots[playerIndex] = socket.id;
-        socket.emit('buzzer-registered', { playerIndex, playerName: gameState.players[playerIndex].name });
+        buzzerPlayers[socket.id] = assignedIndex;
+        buzzerSlots[assignedIndex] = socket.id;
+
+        // Update player name
+        gameState.players[assignedIndex].name = name.trim();
+        io.emit('state-update', gameState);
+
+        socket.emit('buzzer-registered', { playerIndex: assignedIndex, playerName: name.trim() });
         io.emit('room-status', { slots: { 0: !!buzzerSlots[0], 1: !!buzzerSlots[1] } });
     });
 
@@ -251,6 +317,46 @@ io.on('connection', (socket) => {
         gameState.showAnswer = false;
         gameState.buzzer = { active: false, winner: -1 };
         io.emit('state-update', gameState);
+    });
+
+    // Delete a specific question set
+    socket.on('delete-question-set', ({ setId }) => {
+        const idx = gameState.questionSets.findIndex(s => s.id === setId);
+        if (idx === -1) return;
+        gameState.questionSets.splice(idx, 1);
+        rebuildQuestions();
+        io.emit('state-update', gameState);
+    });
+
+    // Full reset — everything back to initial state
+    socket.on('full-reset', () => {
+        // Reset game state
+        gameState.players = [
+            { name: 'A', score: 0 },
+            { name: 'B', score: 0 }
+        ];
+        gameState.questionSets = [];
+        gameState.questions = [];
+        gameState.usedQuestions = [];
+        gameState.currentQuestionIndex = -1;
+        gameState.questionCount = 0;
+        gameState.showAnswer = false;
+        gameState.buzzer = { active: false, winner: -1 };
+
+        // Clear room
+        roomPin = null;
+        // Kick buzzer players
+        Object.keys(buzzerPlayers).forEach(sid => {
+            const s = io.sockets.sockets.get(sid);
+            if (s) s.emit('kicked', { reason: 'Trò chơi đã được reset toàn bộ' });
+        });
+        Object.keys(buzzerPlayers).forEach(k => delete buzzerPlayers[k]);
+        buzzerSlots[0] = null;
+        buzzerSlots[1] = null;
+
+        io.emit('state-update', gameState);
+        io.emit('room-pin', { pin: '----' });
+        io.emit('room-status', { slots: { 0: false, 1: false } });
     });
 
     socket.on('disconnect', () => {

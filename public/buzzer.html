@@ -12,22 +12,27 @@
 </head>
 
 <body>
-    <!-- PIN Entry Screen -->
+    <!-- PIN & Name Entry Screen -->
     <div class="screen" id="pinScreen">
         <div class="pin-icon">🔒</div>
         <div class="select-title">Nhập mã phòng</div>
         <input type="text" id="pinInput" class="pin-input" maxlength="4" placeholder="----" inputmode="numeric"
             autocomplete="off">
+
+        <div class="name-entry" id="nameEntry">
+            <div class="name-label">👤 Tên của bạn</div>
+            <input type="text" id="nameInput" class="name-input" placeholder="Nhập tên..." maxlength="20"
+                autocomplete="off">
+        </div>
+
         <div class="pin-error hidden" id="pinError"></div>
-        <div class="select-buttons">
-            <button class="select-btn select-a" onclick="joinAsPlayer(0)">
-                <span class="select-label">Tham gia làm</span>
-                <span class="select-name" id="selectNameA">Player 1</span>
-            </button>
-            <button class="select-btn select-b" onclick="joinAsPlayer(1)">
-                <span class="select-label">Tham gia làm</span>
-                <span class="select-name" id="selectNameB">Player 2</span>
-            </button>
+
+        <button class="join-btn" id="joinBtn" onclick="joinRoom()">
+            <span>🚀</span> Vào phòng
+        </button>
+
+        <div class="room-info hidden" id="roomInfo">
+            <div class="room-info-text" id="roomInfoText"></div>
         </div>
     </div>
 

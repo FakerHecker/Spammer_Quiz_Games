@@ -6,24 +6,35 @@ let myPlayerIndex = -1;
 const pinScreen = document.getElementById('pinScreen');
 const buzzerScreen = document.getElementById('buzzerScreen');
 const pinInput = document.getElementById('pinInput');
+const nameInput = document.getElementById('nameInput');
 const pinError = document.getElementById('pinError');
-const selectNameA = document.getElementById('selectNameA');
-const selectNameB = document.getElementById('selectNameB');
+const joinBtn = document.getElementById('joinBtn');
+const roomInfo = document.getElementById('roomInfo');
+const roomInfoText = document.getElementById('roomInfoText');
 const buzzerStatus = document.getElementById('buzzerStatus');
 const buzzerPlayerName = document.getElementById('buzzerPlayerName');
 const buzzerBtn = document.getElementById('buzzerBtn');
 const buzzerResult = document.getElementById('buzzerResult');
 const resultText = document.getElementById('resultText');
 
-// Join as player with PIN
-function joinAsPlayer(index) {
+// Join room with PIN + Name
+function joinRoom() {
     const pin = pinInput.value.trim();
+    const name = nameInput.value.trim();
+
     if (pin.length !== 4) {
         showPinError('Vui lòng nhập mã PIN 4 số');
         return;
     }
-    myPlayerIndex = index;
-    socket.emit('register-buzzer', { playerIndex: index, pin: pin });
+    if (!name) {
+        showPinError('Vui lòng nhập tên của bạn');
+        nameInput.focus();
+        return;
+    }
+
+    joinBtn.disabled = true;
+    joinBtn.textContent = '⏳ Đang vào...';
+    socket.emit('register-buzzer', { pin, name });
 }
 
 // Registered confirmation
@@ -33,12 +44,19 @@ socket.on('buzzer-registered', ({ playerIndex, playerName }) => {
     buzzerPlayerName.textContent = playerName;
     buzzerPlayerName.style.color = playerIndex === 0 ? '#4f8cff' : '#ff8c4f';
     myPlayerIndex = playerIndex;
+
+    // Reset join button
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<span>🚀</span> Vào phòng';
 });
 
 // Error from server
 socket.on('buzzer-error', ({ message }) => {
     showPinError(message);
     myPlayerIndex = -1;
+    // Reset join button
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<span>🚀</span> Vào phòng';
 });
 
 // Kicked from room
@@ -47,15 +65,12 @@ socket.on('kicked', ({ reason }) => {
     pinScreen.classList.remove('hidden');
     buzzerScreen.classList.add('hidden');
     pinInput.value = '';
+    nameInput.value = '';
     showPinError(reason);
 });
 
 // State update
 socket.on('state-update', (state) => {
-    // Update player names on select screen
-    selectNameA.textContent = state.players[0].name;
-    selectNameB.textContent = state.players[1].name;
-
     // Update buzzer player name if registered
     if (myPlayerIndex >= 0) {
         buzzerPlayerName.textContent = state.players[myPlayerIndex].name;
@@ -104,9 +119,22 @@ function showPinError(msg) {
     setTimeout(() => pinError.classList.add('hidden'), 3000);
 }
 
-// Auto-focus PIN input
+// Auto-focus PIN input, only allow digits
 pinInput.addEventListener('input', () => {
     pinInput.value = pinInput.value.replace(/\D/g, '');
+});
+
+// Enter key support
+pinInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && pinInput.value.length === 4) {
+        nameInput.focus();
+    }
+});
+
+nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        joinRoom();
+    }
 });
 
 // Connection
@@ -115,6 +143,7 @@ socket.on('connect', () => {
     if (myPlayerIndex >= 0) {
         // Reconnect
         const pin = pinInput.value.trim();
-        socket.emit('register-buzzer', { playerIndex: myPlayerIndex, pin: pin });
+        const name = nameInput.value.trim();
+        socket.emit('register-buzzer', { pin, name });
     }
 });

@@ -86,69 +86,94 @@ body {
     display: none;
 }
 
-.select-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+/* Name Entry */
+.name-entry {
     width: 100%;
-    max-width: 320px;
+    max-width: 280px;
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
-.select-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 2rem;
-    border-radius: 20px;
-    border: 2px solid;
-    background: transparent;
+.name-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+}
+
+.name-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.name-input:focus {
+    border-color: var(--accent-blue);
+}
+
+.name-input::placeholder {
+    color: var(--text-dim);
+    font-weight: 400;
+}
+
+/* Join Button */
+.join-btn {
+    width: 100%;
+    max-width: 280px;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #4f8cff, #6366f1);
+    color: white;
     cursor: pointer;
     transition: all 0.2s;
-    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-.select-btn:active {
-    transform: scale(0.96);
+.join-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
 }
 
-.select-a {
-    border-color: rgba(79, 140, 255, 0.3);
-    background: rgba(79, 140, 255, 0.08);
+.join-btn:active {
+    transform: scale(0.97);
 }
 
-.select-a:hover {
-    background: rgba(79, 140, 255, 0.15);
+.join-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
 }
 
-.select-b {
-    border-color: rgba(255, 140, 79, 0.3);
-    background: rgba(255, 140, 79, 0.08);
+/* Room Info */
+.room-info {
+    margin-top: 1rem;
+    text-align: center;
 }
 
-.select-b:hover {
-    background: rgba(255, 140, 79, 0.15);
+.room-info.hidden {
+    display: none;
 }
 
-.select-label {
+.room-info-text {
     font-size: 0.85rem;
     color: var(--text-dim);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.select-name {
-    font-size: 2rem;
-    font-weight: 800;
-}
-
-.select-a .select-name {
-    color: var(--accent-blue);
-}
-
-.select-b .select-name {
-    color: var(--accent-orange);
 }
 
 /* Buzzer Screen */
