@@ -28,8 +28,20 @@
                 <span class="room-pin-label">Mã Phòng:</span>
                 <span class="room-pin-value" id="roomPinValue">----</span>
             </div>
+
+            <!-- Buzzer Winner Display (overlay nhỏ trên câu hỏi) -->
+            <div class="buzzer-winner-display hidden" id="buzzerWinnerDisplay">
+                <div class="buzzer-winner-label">🔔 NGƯỜI TRẢ LỜI</div>
+                <div class="buzzer-winner-name" id="buzzerWinnerName">Player A</div>
+            </div>
+
             <div class="question-header">
                 <span class="question-badge" id="questionBadge">Chưa có câu hỏi</span>
+                <!-- Countdown hiển thị kế bên badge -->
+                <span class="countdown-badge hidden" id="countdownBadge">
+                    <span class="countdown-icon">⏱</span>
+                    <span class="countdown-value" id="countdownValue">5</span>
+                </span>
             </div>
             <div class="question-text" id="questionText">
                 Hãy nhập câu hỏi từ Controller
@@ -44,14 +56,6 @@
         <div class="player-card player-b">
             <div class="player-name" id="playerBName">B</div>
             <div class="player-score" id="playerBScore">0</div>
-        </div>
-        <!-- Buzzer Overlay -->
-        <div class="buzzer-overlay hidden" id="buzzerOverlay">
-            <div class="buzzer-content">
-                <div class="buzzer-title" id="buzzerTitle">NGƯỜI CHƠI TRẢ LỜI</div>
-                <div class="buzzer-name" id="buzzerName">Player A</div>
-                <div class="buzzer-timer" id="buzzerTimer">10</div>
-            </div>
         </div>
 
         <!-- Score animation overlay -->
